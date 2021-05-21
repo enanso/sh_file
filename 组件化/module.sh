@@ -1,10 +1,10 @@
 #!/bin/bash
 #----------------------iOS读取git管理代码库信息----------------------
 #
-#  1.主工程（组件的壳公文）文件目录与各组件库目录至于同一文件夹 ( project )下
+#  1.主工程（组件的壳工程）文件目录与各组件库目录放于同一文件夹 ( project )下
 #
 #  2.手动设置文件夹路径, 就可以手动拖拽文件夹替换dir的值
-#     dir="${HOME}/project/"
+#       例：dir="${HOME}/project/"
 #
 #  3.需求跌更新业务组件时，主工程分支、各组件分支命名同一标准构造成相同关键字前缀：
 #       例：主工程分支 branch/fileChange
@@ -106,7 +106,7 @@ checkFile(){
             tag=${check_branch#*_}
             echo "${SPACE}【${filename}】${GREEN}${tag}${NC} 分支: ${check_branch}\n"
             else
-            echo "${SPACE}${RED}【${filename}】分支:：${check_branch}${NC}\n"
+            echo "${SPACE}${RED}【${filename}】分支: ${check_branch}${NC}\n"
             fi
         fi
 
