@@ -18,30 +18,38 @@ SYNC_TABLE_NAMES="${curPath}/file.csv"
 #  echo $line
 #done
 
-echo "=====第二种方法====="
+check=("module" "startTag" "endTag" "branchName")
 while read table
 do
     str=$table
     OLD_IFS="$IFS" #保存旧的分隔符
-    IFS="," #逗号分割数组
+    IFS="," #逗号分割数组（csv文件格式特性）
     array=($str)
     IFS="$OLD_IFS" #将IFS恢复成原来的
     
-    #编码能力分割结果
-    for i in "${!array[@]}"; do
-        echo "$i=>${array[i]}"
+    echo "\n=====开始=====\n"
+    for ((i=0;i<${#array[@]};i++))
+    do
+        #遍历取值
+        value=${array[$i]}
+        #判断是否为查询的key
+        res=$(echo "${check[@]}" | grep -wq "${value}" &&  echo "yes" || echo "no")
+        if [ "${res}" == "yes" ];then
+           #终止当前遍历
+           break
+        fi
 
-#        if [ $i == 0 ];then
-#        printf "module":"${array[$i]}"
-#        elif [ $i == 1 ];then
-#        printf "startTag":"${array[$i]}"
-#        elif [ $i == 2 ];then
-#        printf "endTag":"${array[$i]}"
-#        elif [ $i == 3 ];then
-#        printf "branchName":"${array[$i]}"
-#        else
-#        printf "other":"${array[$i]}"
-#        fi
+        if [ $i == 0 ];then
+            echo "module: ${value}"
+        elif [ $i == 1 ];then
+            echo "startTag: ${value}"
+        elif [ $i == 2 ];then
+            echo "endTag: ${value}"
+        elif [ $i == 3 ];then
+            echo "branchName: ${value}"
+        else
+            echo "other: ${value}"
+        fi
     done
 
 #    #构建JSON格式对象
@@ -67,7 +75,4 @@ do
 
 done < $SYNC_TABLE_NAMES | awk 'NR>2'
 
-
-    
-    
 exit

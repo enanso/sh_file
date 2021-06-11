@@ -1,11 +1,12 @@
 #!/bin/bash
-#----------------------删除iOS描述文件----------------------
+#----------------------删除iOS描述文件mobileprovision----------------------
 # 功能1：删除iOS本地存储的已经过期（设置是否允许删除）
 # 功能2：删除iOS本地存储指定描述文件（通过字段匹配）
 # 作者 ：JABase
 #----------------------------------------------------------
 
 #https://blog.csdn.net/qq_36366758/article/details/102744715
+#https://blog.csdn.net/HeroRazor/article/details/80351171
 
 SPACE="=============="
 #Config Color
@@ -25,9 +26,9 @@ filelist=`ls "${dir}"`
 #描述文件删除匹配字段 (默认匹配Bundle Id)
 #feild="application-identifier"
 #描述文件删除匹配字段 (#可手动填入配置（为空时，下方会提示选择处理）)
-feild=""
+feild="application-identifier"
 #删除匹配字段对应的值,【可手动填入配置（为空时，下方会提示输入）】
-feildValue=""
+feildValue="cn.com.ay.tianhuagong"
 
 #可匹配查询字段集合（可根据描述文件中的可匹配字段自行增加选项）
 check=("AppIDName" "UUID" "application-identifier" "com.apple.developer.team-identifier" "TeamName" "BundleId" "all")
@@ -35,82 +36,65 @@ check=("AppIDName" "UUID" "application-identifier" "com.apple.developer.team-ide
 #处理查询（使用egrep正则匹配）
 dealCheck(){
 
+    # 定义记录即将删除文件的数组
+    del_arr=()
+    # 定义记录已经过期的文件数组
+    exdate_arr=()
     #描述文件总数量
     count=0
-    #描述文件删除数量
-    delCount=0
     for filename in $filelist
         do
         #数量自增
         let count++
-        
         #文件路径
         PROFILE_FILE="${dir}${filename}"
-
-        #描述文件中的推送证书类型
-        Type=`egrep -a -A 2 aps-environment "${PROFILE_FILE}" | grep string | sed -e 's/<string>//' -e 's/<\/string>//' -e 's/ //'`
-        #echo "\n====描述文件：${filename} 推送证书类型${Type}"
+        #开发团队
+        TeamName=`egrep -a -A 2 TeamName "${PROFILE_FILE}" | grep string | sed -e 's/<string>//' -e 's/<\/string>//' -e 's/ //'`
+        # app Id 名称
+        AppIDName=`egrep -a -A 2 AppIDName "${PROFILE_FILE}" | grep string | sed -e 's/<string>//' -e 's/<\/string>//' -e 's/ //'`
         
+#        # 描述文件名称
+#        Name=`/usr/libexec/PlistBuddy -c "Print Name" /dev/stdin <<< $(security cms -D -i $PROFILE_FILE)`
         #筛选Id
         IdentifierPrefix=`egrep -a -A 2 application-identifier "${PROFILE_FILE}" | grep string | sed -e 's/<string>//' -e 's/<\/string>//' -e 's/ //'`
-        
         #第一次出现小数点时截取，作为BundleId
         BundleId=${IdentifierPrefix#*.}
-        #echo "\n====BundleId：${BundleId}"
-#        echo "============${BundleId}====================="
-#        echo "===============开发团队:${TeamName}======Id：${IdentifierPrefix}====================="
-        if [ ${BundleId} == ${feildValue} ]&&[ ${feildValue} != "" ]
+
+        if [ ${BundleId} == ${feildValue} ] && [ ${feildValue} != "" ]
         then
-        echo "\n${SPACE}正在移除文件：${RED}${filename}${NC}${SPACE}"
-        #数量自增
-        let delCount++
-        rm "${PROFILE_FILE}"
+           echo "\n${SPACE}符合文件：${RED}${filename}${NC}${SPACE}${Name}"
+           del_arr[${#del_arr[*]}]="${PROFILE_FILE}"
         fi
 
         #描述文件创建时间
         CreationDate=`egrep -a -A 2 CreationDate "${PROFILE_FILE}" | grep date | sed -e 's/<date>//' -e 's/<\/date>//'`
-        
+
         #描述文件过期时间
         ExpirationDate=`egrep -a -A 2 ExpirationDate "${PROFILE_FILE}" | grep date | sed -e 's/<date>//' -e 's/<\/date>//'`
- 
+
         #过期时间格式处理用" "替换掉”T“，并删除所有的大写英文字符（详细sed指令语法）
         ExDate=`echo "${ExpirationDate/T/ }" | sed 's/[A-Z]*//g'`
-#        echo $ExDate
-#        嵌套脚本调用：sh date2timestamp.sh $ExDate
-
-        #现在时间（date +%s为精确到秒的数字，date "+%Y-%m-%dT%H:%M:%SZ"为指定格式）
-        #nowDate=$(date +%s)
-        nowDate=$(date "+%Y-%m-%dT%H:%M:%SZ")
-
-#        echo "============当前时间:${nowDate}====================="
-#    #    echo "\n=====================创建时间：${CreationDate}====================="
-#        echo "=====================过期时间：${ExDate}====================="
-    #    #当前时间
-    #    nowDate=$(date "+%Y%m%d%H%M%S")
-    #    echo $nowDate
-
-    #    #App ID Name
-    #    AppIDName=`egrep -a -A 2 AppIDName "${PROFILE_FILE}" | grep string | sed -e 's/<string>//' -e 's/<\/string>//' -e 's/ //'`
-    #    #截取长度
-    #    first=${AppIDName:0:2}
-
-        #    echo "\n=====================${filename}=====================\n"
-    #    for element in ${check[@]}
-    #        do
-    #        #正则匹配
-    #        value=`egrep -a -A 2 ${element} "${PROFILE_FILE}" | grep string | sed -e 's/<string>//' -e 's/<\/string>//' -e 's/ //'`
-    #        #截取长度
-    #        first=${value:0:2}
-    #        echo "${element}:${value}"
-    #        done
-    #    if [ ${IdentifierPrefix} == "H57E834M6D" ]&&[ ${first} == "m" ]
-    #    then
-    #    rm "${PROFILE_FILE}"
-    #    fi
+        if [ ${#ExDate} -eq 20 ];then
+           ExDate=${ExDate:1}
+        fi
+        # 当前时间
+        nowDate=$(date "+%Y-%m-%d %H:%M:%S")
+        t1=`date -j -f "%Y-%m-%d %H:%M:%S" "${nowDate}" "+%s"`
+        t2=`date -j -f "%Y-%m-%d %H:%M:%S" "$ExDate" "+%s"`
+        # 过期时间比较（当前时间大于或等于过期时间，即视为过期）
+        if [ $t1 -gt $t2 ] || [ $t1 -eq $t2 ]; then
+            CreDate=`echo "${CreationDate/T/ }" | sed 's/[A-Z]*//g'`
+            echo "当前:$nowDate 大于 过期:$ExDate 文件已过期：${filename} 名称：${Name} 创建:$CreDate"
+            exdate_arr[${#exdate_arr[*]}]="${PROFILE_FILE}"
+            #自动删除过期描述文件
+            rm "${PROFILE_FILE}"
+        fi
         done
 
     echo "\n=========描述文件总数量：${count}"
-    echo "=========已删除数量：${delCount}\n"
+    echo "\n=========符合筛选文件路径：${del_arr[*]}"
+    echo "=========筛选数量：${#del_arr[*]}\n"
+    echo "=========过期数量：${#exdate_arr[*]}\n"
 }
 
 #初始化

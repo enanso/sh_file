@@ -33,7 +33,7 @@ else
       ;;
       *)
           dateStr=${1}
-          echo ${dateStr}
+          echo 传参时间:${dateStr}
           if [[ "${dateStr}" =~ ${time_pattern} ]];then
               if [[ "${os_platform}" = "Darwin" ]];then
                   echo `date -j -f "%Y-%m-%d %H:%M:%S" "${dateStr}" +%s`000
