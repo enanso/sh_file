@@ -12,6 +12,13 @@ tag=""
 result=`find ./ -maxdepth 1 -type f -name "*.podspec"`
 SpecName=${result}
 
+# 循环输入直到有值为止
+inputValue(){
+    read -p "请输入【$1】: " word
+    if [[ -z $word ]]; then
+        inputValue "$1"
+    fi
+}
 
 #pull代码
 pull() {
@@ -25,8 +32,8 @@ pull() {
     fi
 }
 
-#push代码，tag
-pushAndTag(){
+#push代码
+push(){
     echo -e "${GREEN}\n第三步：准备提交代码${NC}⏰⏰⏰"
     git add .
     if ! git commit -m ${commitText}
@@ -40,16 +47,6 @@ pushAndTag(){
         exit 1
     fi
     echo -e "${GREEN}提交代码成功${NC}🚀🚀🚀"
-
-#    echo -e "${GREEN}\n第五步：准备打Tag${NC}⏰⏰⏰"
-#    if git tag ${tag}
-#    then
-#        git push --tags
-#        echo -e "${GREEN}打Tag成功${NC}🚀🚀🚀"
-#    else
-#        echo -e "${RED}打Tag失败${NC}🌧🌧🌧"
-#        exit 1
-#    fi
 }
 
 #远程验证
@@ -59,24 +56,24 @@ remoteVerifyLib(){
     echo -e "${GREEN}验证成功${NC}🚀🚀🚀"
 }
 
+start(){
 
-publish(){
-    #
-    echo -e "${GREEN}请输入提交内容:${NC}"
-    read a
-    commitText=${a}
-    
-    #
-    if [ -z "$commitText" ]; then
-        echo -e "${RED}提交内容不能为空${NC}🌧🌧🌧"
-        exit 1
+    # 是否带入参数
+    if [[ ! -z $1 ]];then
+       commitText=$1
     fi
     
+    if [[ -z $commitText ]];then
+       #执行循环输入
+       inputValue "请输入提交内容"
+       #赋值操作
+       commitText=${word}
+    fi
     #拉取远程库
     pull
-
     #推送代码
-    pushAndTag
+    push
 }
 
-publish
+# 入口
+start $1
