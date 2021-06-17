@@ -9,7 +9,7 @@ NC='\033[0m' # No Color
 commitText=""
 
 #加速器
-#export https_proxy=http://127.0.0.1:1890 http_proxy=http://127.0.0.1:1890 all_proxy=socks5://127.0.0.1:1890
+export https_proxy=http://127.0.0.1:7890 http_proxy=http://127.0.0.1:7890 all_proxy=socks5://127.0.0.1:7890
 
 # 循环输入直到有值为止
 inputValue(){
