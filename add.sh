@@ -5,12 +5,11 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 
-#const
-source1=https://github.com/CocoaPods/Specs.git
+# 提交内容
 commitText=""
-tag=""
-result=`find ./ -maxdepth 1 -type f -name "*.podspec"`
-SpecName=${result}
+
+#加速器
+#export https_proxy=http://127.0.0.1:1890 http_proxy=http://127.0.0.1:1890 all_proxy=socks5://127.0.0.1:1890
 
 # 循环输入直到有值为止
 inputValue(){
@@ -34,7 +33,7 @@ pull() {
 
 #push代码
 push(){
-    echo -e "${GREEN}\n第三步：准备提交代码${NC}⏰⏰⏰"
+    echo -e "${GREEN}\n第二步：准备提交代码${NC}⏰⏰⏰"
     git add .
     if ! git commit -m ${commitText}
     then
@@ -47,13 +46,6 @@ push(){
         exit 1
     fi
     echo -e "${GREEN}提交代码成功${NC}🚀🚀🚀"
-}
-
-#远程验证
-remoteVerifyLib(){
-    echo -e "${GREEN}\n可省步：开始远程验证：pod spec lint ${NC}⏰⏰⏰"
-    if ! pod spec lint --skip-import-validation --allow-warnings --use-libraries --sources="${source1}"; then echo -e "${RED}验证失败${NC}🌧🌧🌧"; exit 1; fi
-    echo -e "${GREEN}验证成功${NC}🚀🚀🚀"
 }
 
 start(){
