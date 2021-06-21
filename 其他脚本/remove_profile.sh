@@ -2,6 +2,7 @@
 #----------------------删除iOS描述文件mobileprovision----------------------
 # 功能1：删除iOS本地存储的已经过期（设置是否允许删除）
 # 功能2：删除iOS本地存储指定描述文件（通过字段匹配）
+# 功能3：删除iOS本地存储多余描述文件，保留最新一个（keepLatest设置为true）
 # 作者 ：JABase
 #----------------------------------------------------------
 
@@ -28,6 +29,8 @@ filelist=`ls "${dir}"`
 #描述文件删除匹配字段 (#可手动填入配置（为空时，下方会提示选择处理）)
 feild="application-identifier"
 #删除匹配字段对应的值,【可手动填入配置（为空时，下方会提示输入）】
+feildValue="cn.com.ay.tianhuagong"
+feildValue="com.AQCJ.qycloud"
 
 #可匹配查询字段集合（可根据描述文件中的可匹配字段自行增加选项）
 check=("AppIDName" "UUID" "application-identifier" "com.apple.developer.team-identifier" "TeamName" "BundleId" "all")
@@ -40,6 +43,9 @@ save="${HOME}/Desktop/Profiles_Save"
 
 # 已删除文件夹
 discard="${HOME}/Desktop/Profiles_Discard"
+
+# 是否保留最新版本描述文件(true为保存)
+keepLatest="true"
 
 # 持续创建文件目录
 createfolder(){
@@ -138,9 +144,11 @@ dealCheck(){
         t2=`date -j -f "%Y-%m-%d %H:%M:%S" "$ExDate" "+%s"`
         # 过期时间比较（当前时间大于或等于过期时间，即视为过期）
         if [ $t1 -gt $t2 ] || [ $t1 -eq $t2 ]; then
+                # 描述文件名称
+                Name=$(readfile "${PROFILE_FILE}" "Name")
                 #描述文件创建时间
                 CreDate=$(formattime `egrep -a -A 2 CreationDate "${PROFILE_FILE}" | grep date | sed -e 's/<date>//' -e 's/<\/date>//'`)
-                echo "当前:$nowDate 大于 过期:$ExDate 文件已过期：${filename} 名称：${Name} 创建:$CreDate"
+                echo "当前:${nowDate} 大于 过期:${RED}${ExDate}${NC} 自动删除已过期文件：${filename} 名称：${GREEN}${Name}${NC} 创建于:${GREEN}$CreDate${NC}"
                 exdate_arr[${#exdate_arr[*]}]="${PROFILE_FILE}"
                 #自动删除过期描述文件
                 rm "${PROFILE_FILE}"
@@ -158,8 +166,7 @@ dealCheck(){
         fi
     done
 
-    echo "\n==描述文件总数：${count} ==筛选数：${#filtrate_arr[*]} ==过期数：${#exdate_arr[*]}\n"
-
+    echo "\n== 描述文件：${GREEN}${count}${NC} 个 == 筛选：${GREEN}${#filtrate_arr[*]}${NC} 个 == 过期：${GREEN}${#exdate_arr[*]}${NC} 个\n"
     # 遍历筛选结果
     for(( i=0;i<${#filtrate_arr[@]};i++)) do
         # 读取数组元素
@@ -211,14 +218,18 @@ deletedoublefile(){
         if [ $t1 -gt $t2 ] || [ $t1 -eq $t2 ]; then
             # 拷贝
             copyfile "$2" "$discard"
-            #移除
-            rm "$2"
+            if [ $keepLatest == "true" ]; then
+                #移除
+                rm "$2"
+            fi
             echo "$1"
         else
             # 拷贝
             copyfile "$1" "$discard"
-            #移除
-            rm "$1"
+            if [ $keepLatest == "true" ]; then
+                #移除
+                rm "$1"
+            fi
             echo "$2"
         fi
     else

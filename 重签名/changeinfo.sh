@@ -10,18 +10,26 @@ RED="\033[0;31m"
 GREEN="\033[0;32m"
 NC="\033[0m" # No Color
 
-#脚本接收第一个一个参数是ipa路径 第二个参数是版本号
-bundleVersion="CFBundleVersion"
-shortVersion="CFBundleShortVersionString"
-
+# 当前文件目录
 project_path=$(cd `dirname $0`; pwd)
-#echo "===$project_path"
-IPA_NAME="HBuilder.ipa"
+
+# ipa名称
+IPA_NAME="Payload.ipa"
+
 #ipa路径
-IPA_PATH="$project_path/HBuilder.ipa"
+IPA_PATH="$project_path/Payload.ipa"
 
 #解压路径
 IPA_DIR="$project_path/ChangeIPAFile"
+
+# 是否允许打开plist文件,如果不打开，将自动删除多余文件(ture为打开)
+canopen="false"
+
+# 是否允许打开修改过后的ipa文件路径
+canfile="false"
+
+# plist配置文件
+configFile="config.json"
 
 init(){
     # 是否传参进来
@@ -73,38 +81,137 @@ init(){
 
         # 读取plist文件
         InfoPlist="${appDir}/Info.plist"
-
-        # 修改plist文件
-        changePlist "$bundleVersion" $2
-
-#        # 打开文件
-#        open $InfoPlist
         
+        if [ ${canopen} == "true" ];then
+            # 打开文件
+            open $InfoPlist
+        fi
+        
+        # 修改plist配置文件
+        infoPlistConfig
         #将修改完的文件打包成ipa
         zipipa
     fi
 }
+
+#infoPlist配置
+infoPlistConfig() {
+    # 当前目录下查找配置json文件
+    result=$(find "./" -type f -name "${configFile}")
+    echo "\n==== ${GREEN}开始通过【${configFile}】修改plist文件${NC}⏰⏰⏰ ${result}"
+    
+    if test -z "${result}"; then
+        # 修改plist文件（$2无值时，自增）
+        changePlist "CFBundleVersion" $2
+        exit 1
+    fi
+    
+    # 是否已修改build
+    hasbuild="false"
+    # 读取长度
+    count=$(cat ${result} | jq 'keys | length')
+    for ((j = 0; j < ${count}; j++)); do
+        # 读取配置的key
+        name=$(cat ${result} | jq 'keys' | jq -r --arg INDEX $j '.[$INDEX|tonumber]')
+        # 读取配置的value
+        value=$(cat ${result} | jq -r --arg NAME ${name} '.[$NAME]')
+        
+        # 更正key
+        if [ ${name} == "Version" ] || [ ${name} == "version" ];then
+            name="CFBundleShortVersionString"
+        elif [ ${name} == "Build" ] || [ ${name} == "build" ];then
+            name="CFBundleVersion"
+        fi
+        
+        if [ ${name} == "CFBundleVersion" ];then
+            hasbuild="true"
+        fi
+        # 原始值
+        temp=`/usr/libexec/PlistBuddy -c "Print :${name}" $InfoPlist`
+
+        # 判断plist文件是否已经存在值
+        if [[ -n ${temp} ]]; then
+            # 判断值是否为空
+            if [[ ! -z ${value} ]];then
+                `/usr/libexec/PlistBuddy -c "Set :${name} ${value}" $InfoPlist`
+                echo "\n==修改:${GREEN}${name}${NC}==新值:${GREEN}${value}${NC}==旧值:${RED}${temp}${NC}"
+            else
+                `/usr/libexec/PlistBuddy -c "Delete :${name} ${value}" $InfoPlist`
+                echo "\n==删除:${RED}${name}${NC}==旧值:${RED}${temp}${NC}"
+            fi
+        else
+            if [[ ! -z ${value} ]];then
+                `/usr/libexec/PlistBuddy -c "Add :${name} ${value}" $InfoPlist`
+                echo "\n==新增:${GREEN}${name}${NC}==值:${GREEN}${value}${NC}"
+            fi
+        fi
+        
+    done
+    
+    # 未修改build
+    if [ ${hasbuild} == "false" ];then
+        # 修改plist文件（$2无值时，自增）
+        changePlist "CFBundleVersion" $2
+    fi
+    echo "\n==== ${GREEN}plist完成修改${NC}🚀🚀🚀\n"
+}
+
+# 当前径下是否包含某文件
+hasfile(){
+    if [[ ! -z $1 ]]; then
+        for file in `ls -a ${project_path}`
+        do
+            if [ "${file}" = "$1" ]; then
+                echo "YES"
+            fi
+        done
+    fi
+}
 # 压缩ipa文件
 zipipa(){
-    echo "===即将打开路径：${IPA_DIR} ===$IPA_NAME"
-    
-#    return
+
     cd ${IPA_DIR}
-    zip -r -q "new_${IPA_NAME}" Payload
+    
+    NEW_IPA_NAME="new_${IPA_NAME}"
+    
+    zip -r -q "${NEW_IPA_NAME}" Payload
     if [[ $? != 0 ]]; then
         echo "===${RED}压缩Payload失败${NC}==="
         exit 2
     else
-        # 打开生成后的文件
-        open ${IPA_DIR}
-        cp "${IPA_DIR}/new_${IPA_NAME}" "${project_path}"
-        #删除Payload成功
-        if [[ -d "$IPA_DIR/Payload" ]]; then
-            rm -rf "$IPA_DIR/Payload"
+        # 读取Bundle Id的值
+        BudleId=`/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" $InfoPlist`
+        
+        # ipa拷贝至当前目录下
+        cp "${IPA_DIR}/${NEW_IPA_NAME}" "${project_path}"
+        
+        if [ ${canfile} == "true" ];then
+            # 打开生成后的文件
+            open ${IPA_DIR}
+            #注意此处这是两个反引号，表示运行系统命令
+            for file in `ls -a ${IPA_DIR}`
+            do
+                # 删除所有非ipa文件
+                if [ "${file##*.}" != "ipa" ]&&[ "${file}" != "." ]&&[ "${file}" != ".." ];then
+                    if [ ${canopen} == "true" ];then
+                        if [ ${file} != "Payload" ];then
+                            rm -rf $file
+                        fi
+                    else
+                        rm -rf $file
+                    fi
+                fi
+            done
+        else
+            # 移除所有文件
+            rm -rf $IPA_DIR
         fi
-        # 删除Symbols
-        if [[ -d "$IPA_DIR/Symbols" ]]; then
-            rm -rf "$IPA_DIR/Symbols"
+
+        #回到当前目录执行
+        cd ${project_path}
+        if [ $(hasfile "resign.sh") = "YES" ];then
+            # 执行签名脚本
+            sh resign.sh "${NEW_IPA_NAME}" "$BudleId"
         fi
     fi
 
@@ -115,7 +222,7 @@ function changePlist {
     value=`/usr/libexec/PlistBuddy -c "Print :${1}" $InfoPlist`
     #修改plist文件
     if [[ -n $value ]]; then
-        if [ ${1} == ${bundleVersion} ];then
+        if [ ${1} == "CFBundleVersion" ];then
             if [[ -n $2 ]]; then
               result=`/usr/libexec/PlistBuddy -c "Set :${1} ${2}" $InfoPlist`
             else
@@ -146,5 +253,5 @@ function changePlist {
     fi
 }
 
-# 入口($1为ipa文件路径)
+# 入口($1为ipa文件路径，$2为build指定值)
 init $1  $2

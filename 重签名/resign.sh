@@ -11,6 +11,9 @@ RED="\033[0;31m"
 GREEN="\033[0;32m"
 NC="\033[0m" # No Color
 
+#描述文件所在文件夹路径 (X-code默认为位置)
+#dir="${HOME}/Library/MobileDevice/Provisioning Profiles/"
+
 ##描述文件所在文件夹路径 (手动设置文件夹)
 dir="${HOME}/Desktop/Provisioning Profiles/"
 #目标描述文件路径
@@ -21,7 +24,7 @@ filelist=`ls "${dir}"`
 #描述文件删除匹配字段 (默认匹配Bundle Id，可手动填入配置（为空时，下方会提示选择处理）)
 feild="application-identifier"
 #删除匹配字段对应的值,【可手动填入配置（为空时，下方会提示输入）】
-feildValue="com.zhihundaohe.WLDS"
+feildValue="bundleIdValue"
 
 #可匹配查询字段集合（可根据描述文件中的可匹配字段自行增加选项）
 check=("AppIDName" "UUID" "application-identifier" "com.apple.developer.team-identifier" "TeamName" "BundleId" "all")
@@ -31,6 +34,8 @@ temp_plist_path="./temp_profile.plist"
 
 # 描述文件上传类型develepment、ad-hoc、appstore、enterprise
 filetype="appstore"
+# 本地是否仅保留最新版本描述文件(true为是)
+keepLatest="false"
 
 # 持续创建文件目录
 createfolder(){
@@ -245,12 +250,16 @@ deletedoublefile(){
         t2=`date -j -f "%Y-%m-%d %H:%M:%S" "$(getcreatetime "$2")" "+%s"`
         # 时间比较
         if [ $t1 -gt $t2 ] || [ $t1 -eq $t2 ]; then
-            #移除
-            rm "$2"
+            if [ $keepLatest == "true" ]; then
+                #移除
+                rm "$2"
+            fi
             echo "$1"
         else
-            #移除
-            rm "$1"
+            if [ $keepLatest == "true" ]; then
+                #移除
+                rm "$1"
+            fi
             echo "$2"
         fi
     else
@@ -275,12 +284,14 @@ findfile(){
     for file in $(ls ./)
     do
         if [ "${file##*.}" = "$1" ]; then
-            #        mv ${file} ${file%.*}.sh
             aim_temp=${file}
             let number++
         fi
     done
-    if [[ ${number} = 1 ]];then
+    
+    if [[ ${number} = 0 ]];then
+        echo ""
+    elif [[ ${number} = 1 ]];then
         echo "${aim_temp}"
     else
         echo "no"
@@ -288,13 +299,23 @@ findfile(){
 }
 #初始化
 init(){
-
-    ipafile=$(findfile "ipa")
-    if [ "${ipafile}" = "no" ]; then
-        echo "===${RED}请保留一个ipa文件${NC}==="
-        return
+    # 第一位参数为ipa路径
+    if [[ ! -z $1 ]]; then
+       ipafile=$1
+    else
+        ipafile=$(findfile "ipa")
+        if [ "${ipafile}" = "no" ]||[ "${ipafile}" = "" ]; then
+            echo "===${RED}请保留一个ipa文件${NC}==="
+            return
+        fi
     fi
-    
+
+    # 第二位参数为Bundle Id
+    if [[ ! -z $2 ]]; then
+        feildValue=$2
+        # 为筛选描述文件做准备
+        feild="application-identifier"
+    fi
     # 判断是否为描述文件
     if [ "${aimfilepath##*.}" != "mobileprovision" ];then
         # 置为空
@@ -316,15 +337,20 @@ init(){
         return
     fi
 
-    # 清除临时文件
+    # 清除临时plist文件
     if [ -f "$temp_plist_path" ];then
        rm -f $temp_plist_path
     fi
+
     # 读取并生成到本都
     TeamName=$(readfile "$aimfilepath" "TeamName")
-
-    echo "========${RED}拷贝${GREEN}【${TeamName}】${RED}证书下的十六进制字符串填充${GREEN} Signing Identity: ${NC}========"
-#    fastlane sigh resign
+    TeamID=$(readfile "$aimfilepath" "Entitlements:com.apple.developer.team-identifier")
+    echo "========${RED}拷贝${GREEN}开发团队：【${TeamName}】团队ID：【${TeamID}】${RED}证书下的十六进制字符串填充${GREEN} Signing Identity: ${NC}========"
+    
+    # 描述文件重命名
+    mv  $aimfilepath  "embedded.mobileprovision"
+    #执行重签名
+    fastlane sigh resign
 
 #    keychaininfo
 }
@@ -415,5 +441,5 @@ choosefeild(){
     echo "===check数组个数：【${#check[*]}】 元素：${check[*]}===";
 }
 
-#脚本启动入口init
-init $1
+#脚本启动入口init（$1为ipa文件  $2为Bundle Id）
+init $1  $2
