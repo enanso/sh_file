@@ -8,7 +8,7 @@ NC='\033[0m' # No Color
 # 提交内容
 commitText=""
 
-#加速器
+##加速器
 export https_proxy=http://127.0.0.1:7890 http_proxy=http://127.0.0.1:7890 all_proxy=socks5://127.0.0.1:7890
 
 # 循环输入直到有值为止
@@ -26,7 +26,7 @@ pull() {
     if git pull; then
         echo -e "${GREEN}pull代码成功${NC}🚀🚀🚀"
     else
-        echo -e "${RED}pull代码失败，请手动解决冲突${NC}🌧🌧🌧"
+        echo -e "${RED}代码拉取失败，请手动解决冲突或检查加速器网络${NC}🌧🌧🌧"
         exit 1
     fi
 }
@@ -50,6 +50,9 @@ push(){
 
 start(){
 
+    #拉取远程库
+    pull
+    
     # 是否带入参数
     if [[ ! -z $1 ]];then
        commitText=$1
@@ -57,12 +60,10 @@ start(){
     
     if [[ -z $commitText ]];then
        #执行循环输入
-       inputValue "请输入提交内容"
+       inputValue "提交内容"
        #赋值操作
        commitText=${word}
     fi
-    #拉取远程库
-    pull
     #推送代码
     push
 }
