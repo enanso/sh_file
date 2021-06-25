@@ -32,6 +32,7 @@ canfile="false"
 configFile="config.json"
 
 init(){
+
     # 是否传参进来
     if [[ ! -z $1 ]]; then
         IPA_PATH=$1
@@ -210,8 +211,11 @@ zipipa(){
         #回到当前目录执行
         cd ${project_path}
         if [ $(hasfile "resign.sh") = "YES" ];then
-            # 执行签名脚本
-            sh resign.sh "${NEW_IPA_NAME}" "$BudleId"
+            read -p "输入回车、空格及 y 以外的值拒绝重签名: " res
+            if [ -z ${res} ]||[ ${res} == "y" ]||[ ${res} == "Y" ];then
+                # 执行签名脚本
+                sh resign.sh "${NEW_IPA_NAME}" "$BudleId"
+            fi
         fi
     fi
 
