@@ -88,8 +88,39 @@ publishBinary(){
     echo -e "${GREEN}发布${tag}二进制版本成功${NC}🚀🚀🚀"
 }
 
+# 判断文件是否存在
+function hasfile(){
+    # -f 参数判断 $1 是否存在
+    if [ -f "$1" ]; then
+      echo "YES"
+    fi
+      #touch "$1"
+}
+# 判断文件中是否包含某内容
+function filehasword(){
 
+    if [[ -z $2 ]]; then
+        echo "$2值不能为空"
+        return
+    fi
+    if [[ -n $(hasfile "$1") ]]; then
+
+        if cat "$1" | grep "$2" > /dev/null
+        then
+            echo "$1中已存在$2"
+            continue
+        fi
+    else
+        echo "$1文件不存在"
+    fi
+}
 publish(){
+    # .gitignore文件件中追加内容
+    if [[ -z $(filehasword ".gitignore" "Example/Pods") ]]; then
+        # > 为覆盖内容 >>为追加内容
+        echo "Example/Pods">>".gitignore"
+        echo "Example/Podfile.lock">>".gitignore"
+    fi
     #
     echo -e "${GREEN}请输入提交内容:${NC}"
     read a
