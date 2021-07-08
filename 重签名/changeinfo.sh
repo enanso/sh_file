@@ -14,10 +14,10 @@ NC="\033[0m" # No Color
 project_path=$(cd `dirname $0`; pwd)
 
 # ipa名称
-IPA_NAME="Payload.ipa"
+IPA_NAME=""
 
 #ipa路径
-IPA_PATH="$project_path/Payload.ipa"
+IPA_PATH="$project_path/"
 
 #解压路径
 IPA_DIR="$project_path/ChangeIPAFile"
@@ -41,8 +41,22 @@ init(){
     # 是否包含ipa后缀
     if echo "$IPA_PATH" | grep -q -E '\.ipa$'
     then
-        echo "存在.ipa后缀"
+        # 路径读取文件
+        IPA_NAME=${IPA_PATH##*/}
+        project_path=${IPA_PATH%/*}
+        echo "==外部传入文件：$IPA_NAME===路径：$project_path"
     else
+        # 判断文件后缀
+        if [ "${IPA_NAME##*.}" != "ipa" ];then
+        for file in $(ls "$project_path")
+        do
+            if [ "${file##*.}" = "ipa" ]&&[ ${file} != new_* ]; then
+                IPA_NAME=${file}
+                echo "===自动读取文件夹中的ipa文件：${IPA_NAME}"
+                break
+            fi
+        done
+        fi
         # 是否以"/"结尾
         if echo "$IPA_PATH" | grep -q -E '\/$'
         then
@@ -54,11 +68,10 @@ init(){
     
     # 判断文件是否存在
     if [ ! -f "$IPA_PATH" ]; then
-        echo "== ${RED}${IPA_PATH} 不存在${NC} =="
+        echo "== ${RED}${IPA_PATH}${NC} 不存在 =="
         return
     fi
-    # 路径读取文件
-    IPA_NAME=${IPA_PATH##*/}
+    
     
     #删除临时解包目录
     if [ -d "$IPA_DIR" ]; then
@@ -83,11 +96,33 @@ init(){
         # 读取plist文件
         InfoPlist="${appDir}/Info.plist"
         
+        # 遍历解压包下的动态库（需要重签名）
+        for appfile in `ls -a ${appDir}`
+        do
+            if [ "${appfile}" = "Frameworks" ]; then
+                FRAMEWORKS_DIR="${appDir}/Frameworks"
+                echo "存在Frameworks:${FRAMEWORKS_DIR}"
+                # 遍历读取动态库
+                for framework in "$FRAMEWORKS_DIR"
+                do
+                    # 判断需要被重签名的动态库
+                    if [[ "$framework" == *.framework || "$framework" == *.dylib ]]
+                    then
+                        echo "需要被重签名的动态库：Resigning '$framework'"
+                        ## Must not qote KEYCHAIN_FLAG because it needs to be unwrapped and passed to codesign with spaces
+                        #/usr/bin/codesign ${VERBOSE} ${KEYCHAIN_FLAG} -f -s "$CERTIFICATE" "$framework"
+                    else
+                      echo "Ignoring non-framework: $framework"
+                    fi
+                done
+            fi
+        done
+
         if [ ${canopen} == "true" ];then
             # 打开文件
             open $InfoPlist
         fi
-        
+
         # 修改plist配置文件
         infoPlistConfig
         #将修改完的文件打包成ipa
@@ -98,15 +133,14 @@ init(){
 #infoPlist配置
 infoPlistConfig() {
     # 当前目录下查找配置json文件
-    result=$(find "./" -type f -name "${configFile}")
-    echo "\n==== ${GREEN}开始通过【${configFile}】修改plist文件${NC}⏰⏰⏰ ${result}"
+    result=$(find "$project_path" -type f -name "${configFile}")
     
     if test -z "${result}"; then
         # 修改plist文件（$2无值时，自增）
         changePlist "CFBundleVersion" $2
-        exit 1
+        return
     fi
-    
+    echo "\n==== ${GREEN}开始通过【${configFile}】修改plist文件${NC}⏰⏰⏰ ${result}"
     # 是否已修改build
     hasbuild="false"
     # 读取长度
@@ -173,9 +207,12 @@ zipipa(){
 
     cd ${IPA_DIR}
     
-    NEW_IPA_NAME="new_${IPA_NAME}"
+    # 新文件名称
+    NEW_IPA_NAME="new_$(date "+%Y-%m-%d")_${IPA_NAME}"
     
+    # 压缩文件
     zip -r -q "${NEW_IPA_NAME}" Payload
+    
     if [[ $? != 0 ]]; then
         echo "===${RED}压缩Payload失败${NC}==="
         exit 2
@@ -214,7 +251,7 @@ zipipa(){
             read -p "输入回车、空格及 y 以外的值拒绝重签名: " res
             if [ -z ${res} ]||[ ${res} == "y" ]||[ ${res} == "Y" ];then
                 # 执行签名脚本
-                sh resign.sh "${NEW_IPA_NAME}" "$BudleId"
+                sh resign.sh "${project_path}/${NEW_IPA_NAME}" "$BudleId"
             fi
         fi
     fi
@@ -222,7 +259,7 @@ zipipa(){
 }
 # 修改plist (新增或者修改$1为key,$2为值)
 function changePlist {
-
+    echo "===修改plist文件==="
     value=`/usr/libexec/PlistBuddy -c "Print :${1}" $InfoPlist`
     #修改plist文件
     if [[ -n $value ]]; then

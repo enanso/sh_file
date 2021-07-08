@@ -29,8 +29,7 @@ filelist=`ls "${dir}"`
 #描述文件删除匹配字段 (#可手动填入配置（为空时，下方会提示选择处理）)
 feild="application-identifier"
 #删除匹配字段对应的值,【可手动填入配置（为空时，下方会提示输入）】
-feildValue="cn.com.ay.tianhuagong"
-feildValue="com.AQCJ.qycloud"
+feildValue="com.njxingong.qycloud"
 
 #可匹配查询字段集合（可根据描述文件中的可匹配字段自行增加选项）
 check=("AppIDName" "UUID" "application-identifier" "com.apple.developer.team-identifier" "TeamName" "BundleId" "all")

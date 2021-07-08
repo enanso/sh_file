@@ -12,10 +12,8 @@ GREEN="\033[0;32m"
 NC="\033[0m" # No Color
 
 #描述文件所在文件夹路径 (X-code默认为位置)
-#dir="${HOME}/Library/MobileDevice/Provisioning Profiles/"
+dir="${HOME}/Library/MobileDevice/Provisioning Profiles/"
 
-##描述文件所在文件夹路径 (手动设置文件夹)
-dir="${HOME}/Desktop/Provisioning Profiles/"
 #目标描述文件路径
 aimfilepath=""
 
@@ -164,7 +162,7 @@ dealCheck(){
                 #第一次出现小数点时截取，作为BundleId
                 BundleId=${IdentifierPrefix#*.}
 
-                if [ ${BundleId} == ${feildValue} ] && [ ${feildValue} != "" ]
+                if [[ ${BundleId} == ${feildValue} ]] && [[ ${feildValue} != "" ]]
                 then
                    # 记录符合查询结果数据
                    filtrate_arr[${#filtrate_arr[*]}]="${PROFILE_FILE}"
@@ -325,15 +323,20 @@ init(){
             return
         fi
     fi
-    # 判断描述文件在不在
+    # 判断描述文件若不在，本地自动查找
     if [ ! -f "$aimfilepath" ]; then
         #处理查询
         dealCheck
     fi
     
+    # 查找后若仍不存在，结束返回
+    if [ ! -f "$aimfilepath" ]; then
+        echo "===${RED}描述文件不存在${NC}===\n"
+        return
+    fi
     # 判断描述文件是否已过期
     if [ "$(isxpiration "$aimfilepath")" = "YES" ];then
-        echo "===${RED}描述文件已过期${NC}==="
+        echo "===${RED}描述文件已过期${NC}===\n"
         return
     fi
 
@@ -350,8 +353,9 @@ init(){
     # 描述文件重命名
     mv  $aimfilepath  "embedded.mobileprovision"
     #执行重签名
-    fastlane sigh resign
-
+    echo "==执行重签名包：$ipafile==执行重签名文件：$aimfilepath"
+    fastlane sigh resign "$ipafile"
+    
 #    keychaininfo
 }
 
