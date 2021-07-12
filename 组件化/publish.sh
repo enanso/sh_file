@@ -145,27 +145,24 @@ publish(){
         exit 1
     fi
     
-    #
+    #pull代码
     pull
 
-    #
+    #替换podspec的Tag
     updatePodspec
     
-    #
+    #本地验证Lib
     localVerifyLib
 
-    #
+    #push代码，tag
     pushAndTag
-
-    #
+    #远程验证
     remoteVerifyLib
-
-    #
+    #发布库
     publishLib
-
-    #
+    #发布二进制
     publishBinary
 
 }
-
+# 脚本入口
 publish
