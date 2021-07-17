@@ -16,10 +16,7 @@ GREEN="\033[0;32m"
 NC="\033[0m" # No Color
 
 #描述文件所在文件夹路径 (X-code默认为位置)
-#dir="${HOME}/Library/MobileDevice/Provisioning Profiles/"
-
-##描述文件所在文件夹路径 (手动设置文件夹)
-dir="${HOME}/Desktop/Provisioning Profiles/"
+dir="${HOME}/Library/MobileDevice/Provisioning Profiles/"
 
 #所有描述文件列表
 filelist=`ls "${dir}"`
@@ -29,7 +26,7 @@ filelist=`ls "${dir}"`
 #描述文件删除匹配字段 (#可手动填入配置（为空时，下方会提示选择处理）)
 feild="application-identifier"
 #删除匹配字段对应的值,【可手动填入配置（为空时，下方会提示输入）】
-feildValue="com.njxingong.qycloud"
+feildValue="com.abcown.eva"
 
 #可匹配查询字段集合（可根据描述文件中的可匹配字段自行增加选项）
 check=("AppIDName" "UUID" "application-identifier" "com.apple.developer.team-identifier" "TeamName" "BundleId" "all")
