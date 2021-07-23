@@ -31,7 +31,7 @@ check=("AppIDName" "UUID" "application-identifier" "com.apple.developer.team-ide
 temp_plist_path="./temp_profile.plist"
 
 # 描述文件上传类型develepment、ad-hoc、appstore、enterprise
-filetype="appstore"
+filetype="develepment"
 # 本地是否仅保留最新版本描述文件(true为是)
 keepLatest="false"
 
@@ -123,7 +123,7 @@ dealCheck(){
        #赋值操作
        feildValue=${p}
     fi
-    echo "========= 匹配字段值：${RED}${feildValue}${NC} =========\n"
+    echo "\n========= 匹配到的Bundle ID：${RED}${feildValue}${NC} =========\n"
     
     # 定义记录符合筛选条件的数组
     filtrate_arr=()
@@ -331,7 +331,7 @@ init(){
     
     # 查找后若仍不存在，结束返回
     if [ ! -f "$aimfilepath" ]; then
-        echo "===${RED}描述文件不存在${NC}===\n"
+        echo "===${RED} ${dir}中不存在匹配描述文件 ${NC}===\n"
         return
     fi
     # 判断描述文件是否已过期

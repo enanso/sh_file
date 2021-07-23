@@ -154,7 +154,7 @@ dealCheck(){
                 #第一次出现小数点时截取，作为BundleId
                 BundleId=${IdentifierPrefix#*.}
 
-                if [ ${BundleId} == ${feildValue} ] && [ ${feildValue} != "" ]
+                if [[ ${BundleId} == ${feildValue} ]] && [[ ${feildValue} != "" ]]
                 then
                    # 记录符合查询结果数据
                    filtrate_arr[${#filtrate_arr[*]}]="${PROFILE_FILE}"

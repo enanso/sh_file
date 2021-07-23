@@ -8,9 +8,8 @@ NC='\033[0m' # No Color
 # 提交内容
 commitText=""
 
-##加速器
+###加速器
 export https_proxy=http://127.0.0.1:7890 http_proxy=http://127.0.0.1:7890 all_proxy=socks5://127.0.0.1:7890
-
 # 循环输入直到有值为止
 inputValue(){
     read -p "请输入【$1】: " word

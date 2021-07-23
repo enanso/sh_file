@@ -82,8 +82,10 @@ init(){
     
     #解包IPA
     if [[ -f "$IPA_PATH" ]]; then
-        #ipa解压
-        unzip -q "$IPA_PATH" -d "$IPA_DIR"
+        #ipa解压（unzip直接解压，遇到中文会报错）
+        # unzip -q "$IPA_PATH" -d "$IPA_DIR"
+        # 此种方法解压避免出现中文无法解压的情况
+        ditto -V -x -k --sequesterRsrc "$IPA_PATH" "$IPA_DIR"
         
         if [[ $? != 0 ]]; then
             echo "===${RED}ipa解压 $IPA_PATH 失败${NC}==="

@@ -28,7 +28,7 @@ NC="\033[0m" # No Color
 dir=$(cd `dirname $0`; pwd)
 
 # iPhone连接网络的IP地址
-IPHONE_LOCAL_IP="192.168.1.109"
+IPHONE_LOCAL_IP="192.168.31.109"
 
 # 服务别名
 NICK_NAME="server"
@@ -177,6 +177,7 @@ function entrance(){
         chmod 700 -R .ssh
     fi
     
+    echo "======${RED} 第一次出现'root@$IPHONE_LOCAL_IP's password:'后，输入ssh默认登录password：${GREEN}${ALPINE}${NC}"
     # 3.1 自动创建拷贝id_rsa.pub给SSH远程服务器(第一次连接需要输入alpine)
     ssh-copy-id root@"$IPHONE_LOCAL_IP"
 
@@ -211,7 +212,6 @@ function entrance(){
     echo "======${RED} 2.如果出现'ssh: connect to host $IPHONE_LOCAL_IP port 22: Operation timed out'，请检查手机和Mac是否处于同一网络环境中${NC}"
         
     echo "\n======${RED} 连接成功后，输入exit或者ctrl+D退出登录(logout)${NC}"
-    echo "======${RED} 第一次出现'root@$IPHONE_LOCAL_IP's password:'后，输入ssh默认登录password：${GREEN}${ALPINE}${NC}"
 
     # 使用别名登录
     ssh $NICK_NAME
