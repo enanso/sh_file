@@ -26,7 +26,7 @@ filelist=`ls "${dir}"`
 #描述文件删除匹配字段 (#可手动填入配置（为空时，下方会提示选择处理）)
 feild="application-identifier"
 #删除匹配字段对应的值,【可手动填入配置（为空时，下方会提示输入）】
-feildValue="com.abcown.eva"
+feildValue="cn.com.ay.tianhuagong"
 
 #可匹配查询字段集合（可根据描述文件中的可匹配字段自行增加选项）
 check=("AppIDName" "UUID" "application-identifier" "com.apple.developer.team-identifier" "TeamName" "BundleId" "all")
@@ -84,7 +84,7 @@ findtype(){
   if [ $ProvisionedDevices_txt_len -gt 0 ]; then
     # echo "debug --- adhoc"
       get_task_allow=$(/usr/libexec/PlistBuddy -c "print Entitlements:get-task-allow" $temp_plist_path)
-      if [ $get_task_allow == "false" ]; then
+      if [[ $get_task_allow == "false" ]]; then
           echo "ad-hoc"
           return 1
       else
@@ -196,8 +196,36 @@ dealCheck(){
     \n===保留ad-hoc：${hoc_path}
     \n===保留appstore：${aps_path}
     \n===保留enterprise：${ep_path}\n${NC}"
+    
+    # 查看证书剩余时间是否小于90天(双引号避免出现文件路径中存在空格)
+    rest_of_time "${dev_path}"
+    rest_of_time "${hoc_path}"
+    rest_of_time "${aps_path}"
+    rest_of_time "${ep_path}"
 }
-
+# 描述文件剩余过期时间
+function rest_of_time(){
+    if [[ ! -z "$1" ]];then
+        #描述文件过期时间
+        ExDateTemp=$(formattime `egrep -a -A 2 ExpirationDate "${1}" | grep date | sed -e 's/<date>//' -e 's/<\/date>//'`)
+        # 当前时间
+        nowDateTemp=$(date "+%Y-%m-%d %H:%M:%S")
+        t1_temp=`date -j -f "%Y-%m-%d %H:%M:%S" "${nowDate}" "+%s"`
+        t2_temp=`date -j -f "%Y-%m-%d %H:%M:%S" "$ExDate" "+%s"`
+        
+                # 计算时间差值
+        diffValue=`expr $t2_temp - $t1_temp`
+        # 一天秒数计算
+        oneDay=`expr 24 \* 60 \* 60` #<strong>必须在*前加\才能实现乘法,因为 * 有其它意义</strong>
+        # 剩余过期天数
+        ExpDays=`expr $diffValue / $oneDay`
+        # 判断是否小于90天
+        if [ $ExpDays -lt "90" ];then
+         TypeTemp=$(findtype "${1}")
+         echo "描述文件：$1 ==类型：$TypeTemp == ${RED}剩余${ExpDays}天过期${NC}，请注意是否需要更换"
+        fi
+    fi
+}
 # 文件拷贝（$1为目标文件，$2为目标目录）
 copyfile(){
     if [[ ! -z "$1" ]]&&[[ ! -z "$2" ]];then
