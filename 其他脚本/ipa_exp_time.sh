@@ -22,6 +22,9 @@ IPA_PATH="$project_path/"
 #解压路径
 IPA_DIR="$project_path/ChangeIPAFile"
 
+# 临时将xxx.mobileprovision转换成plist文件路径
+temp_plist_path="./temp_profile.plist"
+
 init(){
 
     # 是否传参进来
@@ -110,10 +113,38 @@ init(){
         # 剩余过期天数
         ExpDays=`expr $diffValue / $oneDay`
 
+        # 描述文件名称
+        Name=$(readfile "${PROFILE_PATH}" "Name")
+
         echo "\n\nAppID名称：${RED}${AppIDName}${NC}"
         echo "开发者：${RED}${TeamName}${NC}"
-        echo "文件：${IPA_PATH}"
-        echo " 过期时间：${RED}${ExDate}${NC} 剩余：${RED}${ExpDays}${NC}天\n\n"
+        echo "描述文件名称：${RED}${Name}${NC}"
+        echo "ipa路径：${IPA_PATH}"
+        echo "过期时间：${RED}${ExDate}${NC} 剩余：${RED}${ExpDays}${NC} 天\n\n"
+    fi
+    
+    # 临时文件若存在，需清除
+    if [ -f "$temp_plist_path" ];then
+       rm -f $temp_plist_path
+    fi
+
+    # IPA解压包文件夹，默认会被删除
+    rm -rf $IPA_DIR
+}
+
+# 读取描述文件（$1为描述文件路径，$2为查询字段）
+readfile(){
+    #接收参数，也就是xxx.mobileprovision的路径
+    profile_path=$1
+    #删除之前存在的plist文件
+    rm -rf $temp_plist_path
+    #将xxx.mobileprovision转换成xxx.plist
+    security cms -D -i "$profile_path" > $temp_plist_path
+
+    #判断第二参数是否为空
+    if [[ ! -z $2 ]];then
+      result=$(/usr/libexec/PlistBuddy -c "print $2" $temp_plist_path)
+      echo "$result"
     fi
 }
 
